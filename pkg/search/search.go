@@ -53,12 +53,14 @@ func Any(ctx context.Context, phrase string, files []string) <-chan Result {
 			select {
 			case <-ctx.Done():
 				log.Println("received cancel: ", i)
+				return
 			default:
 				result := FindAnyMatchTextInFile(phrase, filename)
-				if (Result{}) != result {
+				if result != (Result{}) {
 					ch <- result
+					return
 				}
-
+				log.Println("result: ", result)
 			}
 		}(ctx, files[i], i, resultChan)
 	}

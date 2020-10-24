@@ -15,8 +15,8 @@ func TestAll_user(t *testing.T) {
 	log.Println("result: ", results)
 }
 
-func TestAny_user(t *testing.T) {
-	results := Any(context.Background(), "ipsum1", []string{"../../data/test.txt", "../../data/test_copy.txt"})
+func TestAny_user_404(t *testing.T) {
+	results := Any(context.Background(), "abs1", []string{"../../data/test.txt", "../../data/test_copy.txt"})
 	result, err := <-results
 	if !err {
 		log.Println("error: ", err)
@@ -26,3 +26,15 @@ func TestAny_user(t *testing.T) {
 	log.Println("result.LineNum: ", result.LineNum)
 	log.Println("result.ColNum: ", result.ColNum)
 }
+
+//func TestAny_user(t *testing.T) {
+//	results := Any(context.Background(), "ipsum", []string{"../../data/test.txt", "../../data/test_copy.txt"})
+//	result, err := <-results
+//	if !err {
+//		log.Println("error: ", err)
+//	}
+//	log.Println("result.Phrase: ", result.Phrase)
+//	log.Println("result.Line: ", result.Line)
+//	log.Println("result.LineNum: ", result.LineNum)
+//	log.Println("result.ColNum: ", result.ColNum)
+//}

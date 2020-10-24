@@ -24,7 +24,7 @@ func All(ctx context.Context, phrase string, files []string) <-chan []Result {
 		wg.Add(1)
 		go func(ctx context.Context, filename string, i int, resultChan chan<- []Result) {
 			defer wg.Done()
-			results := FindAllMatchTextInFile(phrase, filename)
+			results := FindAll(phrase, filename)
 			if len(results) > 0 {
 				resultChan <- results
 			}
@@ -44,45 +44,40 @@ func All(ctx context.Context, phrase string, files []string) <-chan []Result {
 func Any(ctx context.Context, phrase string, files []string) <-chan Result {
 	resultChan := make(chan Result)
 	wg := sync.WaitGroup{}
+	result := Result{}
 
-	ctx, cancel := context.WithCancel(ctx)
 	for i := 0; i < len(files); i++ {
-		wg.Add(1)
-		go func(ctx context.Context, filename string, i int, ch chan<- Result) {
-			defer wg.Done()
-			log.Println("start: ", i, " filename: ", filename)
-			select {
-			case a := <-ctx.Done():
-				log.Println("received cancel: ", i, " a: ", a)
-				wg.Done()
-				return
-			default:
-				result := FindAnyMatchTextInFile(phrase, filename)
-				ch <- result
-				log.Println("result: ", result)
-				if result != (Result{}) {
-					//wg.Done()
-					log.Println("isEqual: ", result != (Result{}))
-					return
-				}
-			}
-		}(ctx, files[i], i, resultChan)
-	}
+		data, err := ioutil.ReadFile(files[i])
+		if err != nil {
+			log.Println("error while open file: ", err)
+		}
 
-	re := <-resultChan
-	cancel()
-	log.Println("resultChan in main: ", re)
+		if strings.Contains(string(data), phrase) {
+			res := FindAny(phrase, string(data))
+			if (Result{}) != res {
+				result = res
+				break
+			}
+		}
+	}
+	log.Println("find result: ", result)
+
+	wg.Add(1)
+	go func(ctx context.Context, ch chan<- Result) {
+		defer wg.Done()
+		if (Result{}) != result {
+			ch <- result
+		}
+	}(ctx, resultChan)
 
 	go func() {
 		defer close(resultChan)
 		wg.Wait()
-		cancel()
-
 	}()
 	return resultChan
 }
 
-func FindAllMatchTextInFile(phrase, fileName string) (results []Result) {
+func FindAll(phrase, fileName string) (results []Result) {
 	data, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		log.Println("error while open file: ", err)
@@ -105,18 +100,8 @@ func FindAllMatchTextInFile(phrase, fileName string) (results []Result) {
 	return results
 }
 
-func FindAnyMatchTextInFile(phrase, fileName string) (result Result) {
-	data, err := ioutil.ReadFile(fileName)
-	if err != nil {
-		log.Println("error while open file: ", err)
-		return result
-	}
-
-	split := strings.Split(string(data), "\n")
-	for i, line := range split {
-		log.Println("line: ", line)
-		log.Println("phrase: ", phrase)
-
+func FindAny(phrase, search string) (result Result) {
+	for i, line := range strings.Split(search, "\n") {
 		if strings.Contains(line, phrase) {
 			return Result{
 				Phrase:  phrase,
@@ -124,9 +109,7 @@ func FindAnyMatchTextInFile(phrase, fileName string) (result Result) {
 				LineNum: int64(i + 1),
 				ColNum:  int64(strings.Index(line, phrase)) + 1,
 			}
-
 		}
 	}
-
 	return result
 }

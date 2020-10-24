@@ -20,7 +20,6 @@ func All(ctx context.Context, phrase string, files []string) <-chan []Result {
 	wg := sync.WaitGroup{}
 
 	ctx, cancel := context.WithCancel(ctx)
-
 	for i := 0; i < len(files); i++ {
 		wg.Add(1)
 		go func(ctx context.Context, filename string, i int, resultChan chan<- []Result) {
@@ -47,10 +46,9 @@ func Any(ctx context.Context, phrase string, files []string) <-chan Result {
 	wg := sync.WaitGroup{}
 
 	ctx, cancel := context.WithCancel(ctx)
-
 	for i := 0; i < len(files); i++ {
 		wg.Add(1)
-		go func(ctx context.Context, filename string, i int, resultChan chan<- Result) {
+		go func(ctx context.Context, filename string, i int, ch chan<- Result) {
 			defer wg.Done()
 			select {
 			case <-ctx.Done():
@@ -58,7 +56,7 @@ func Any(ctx context.Context, phrase string, files []string) <-chan Result {
 			default:
 				result := FindAnyMatchTextInFile(phrase, filename)
 				if (Result{}) != result {
-					resultChan <- result
+					ch <- result
 				}
 
 			}
@@ -107,8 +105,8 @@ func FindAnyMatchTextInFile(phrase, fileName string) (result Result) {
 		return result
 	}
 
-	temp := strings.Split(string(data), "\n")
-	for i, line := range temp {
+	split := strings.Split(string(data), "\n")
+	for i, line := range split {
 		if strings.Contains(line, phrase) {
 			return Result{
 				Phrase:  phrase,

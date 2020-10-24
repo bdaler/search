@@ -55,7 +55,7 @@ func Any(ctx context.Context, phrase string, files []string) <-chan Result {
 			case a := <-ctx.Done():
 				log.Println("received cancel: ", i, " a: ", a)
 				wg.Done()
-				//return
+				return
 			default:
 				result := FindAnyMatchTextInFile(phrase, filename)
 				ch <- result

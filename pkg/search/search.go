@@ -50,23 +50,28 @@ func Any(ctx context.Context, phrase string, files []string) <-chan Result {
 		wg.Add(1)
 		go func(ctx context.Context, filename string, i int, ch chan<- Result) {
 			defer wg.Done()
+			log.Println("start: ", i, " filename: ", filename)
 			select {
-			case <-ctx.Done():
-				log.Println("received cancel: ", i)
-				return
+			case a := <-ctx.Done():
+				log.Println("received cancel: ", i, " a: ", a)
+				wg.Done()
+				//return
 			default:
 				result := FindAnyMatchTextInFile(phrase, filename)
+				ch <- result
+				log.Println("result: ", result)
 				if result != (Result{}) {
-					ch <- result
+					//wg.Done()
+					log.Println("isEqual: ", result != (Result{}))
 					return
 				}
-				log.Println("result: ", result)
 			}
 		}(ctx, files[i], i, resultChan)
 	}
 
-	<-resultChan
+	re := <-resultChan
 	cancel()
+	log.Println("resultChan in main: ", re)
 
 	go func() {
 		defer close(resultChan)
@@ -109,6 +114,9 @@ func FindAnyMatchTextInFile(phrase, fileName string) (result Result) {
 
 	split := strings.Split(string(data), "\n")
 	for i, line := range split {
+		log.Println("line: ", line)
+		log.Println("phrase: ", phrase)
+
 		if strings.Contains(line, phrase) {
 			return Result{
 				Phrase:  phrase,

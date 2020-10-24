@@ -16,7 +16,7 @@ func TestAll_user(t *testing.T) {
 }
 
 func TestAny_user(t *testing.T) {
-	results := Any(context.Background(), "ipsum", []string{"../../data/test.txt", "../../data/test_copy.txt"})
+	results := Any(context.Background(), "ipsum1", []string{"../../data/test.txt", "../../data/test_copy.txt"})
 	result, err := <-results
 	if !err {
 		log.Println("error: ", err)
